@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#07060b">
+<title>EMBERWAKE — A Gothic Courtship in the Deep</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 61 32 32 61 3 32Z' fill='%230b0710' stroke='%23d9b978' stroke-width='2'/%3E%3Cpath d='M32 14c8 5 12 12 12 19 0 8-5 14-12 17-7-3-12-9-12-17 0-7 4-14 12-19Z' fill='%23b42b4b'/%3E%3Cpath d='M32 21v25M24 30h16' stroke='%23f0dfb8' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<canvas id="game" aria-label="Game view"></canvas>
+<div id="grain"></div>
+<div id="vignette"></div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-hero">
+      <div class="hud-portrait"><img id="hud-portrait-img" alt=""></div>
+      <div class="hud-stats">
+        <div class="hud-name" id="hud-name">VESPER</div>
+        <div class="bar hp"><i id="hp-fill"></i><span id="hp-text">100 / 100</span></div>
+        <div class="bar mana"><i id="mana-fill"></i><span id="mana-text">100</span></div>
+      </div>
+    </div>
+    <div class="hud-center">
+      <div class="depth-label" id="depth-label">THE SUNKEN NAVE</div>
+      <div class="room-objective" id="room-objective">Clear the chamber</div>
+    </div>
+    <div class="hud-right">
+      <div class="currency"><span class="coin ember">✦</span><b id="run-embers">0</b><small>EMBERS</small></div>
+      <div class="currency"><span class="coin cinder">❖</span><b id="meta-cinders">0</b><small>CINDERS</small></div>
+      <button class="icon-btn" id="btn-pause" title="Pause (Esc)">☰</button>
+    </div>
+  </div>
+
+  <div id="boss-wrap" class="hidden">
+    <div class="boss-label"><span id="boss-name">THE GILDED WIDOW</span><em id="boss-phase">I</em></div>
+    <div class="boss-bar"><i id="boss-fill"></i></div>
+  </div>
+
+  <div class="hud-bottom">
+    <div class="boon-rail" id="boon-rail"></div>
+    <div class="ability-bar">
+      <button class="ability melee" id="ab-melee"><span class="glyph">⚔</span><small>MELEE</small><i class="cd" id="cd-melee"></i></button>
+      <button class="ability ranged" id="ab-ranged"><span class="glyph">✦</span><small>BOLT</small><i class="cd" id="cd-ranged"></i></button>
+      <button class="ability dash" id="ab-dash"><span class="glyph">➤</span><small>DASH</small><i class="cd" id="cd-dash"></i></button>
+    </div>
+    <div class="bond-rail" id="bond-rail"></div>
+  </div>
+</div>
+
+<div id="interact-prompt" class="hidden"><kbd>E</kbd><span id="interact-text">Speak</span></div>
+
+<!-- ============ TITLE ============ -->
+<section id="screen-title" class="screen title-screen active">
+  <div class="title-shade"></div>
+  <div class="title-portraits" id="title-portraits"></div>
+  <div class="title-content">
+    <div class="title-kicker"><span></span> A GOTHIC ACTION ROGUELIKE <span></span></div>
+    <h1 class="logo">EMBER<span>WAKE</span></h1>
+    <p class="tagline">Descend into the Sunken Nave.<br>Three immortal women are waiting to see what you become.</p>
+    <nav class="title-menu">
+      <button class="menu-btn primary" data-action="enter-hub"><span>Enter the Sanctum</span><em id="title-continue-label">Begin your descent</em></button>
+      <button class="menu-btn" data-action="open-gallery"><span>Illustration Gallery</span><em>Bonds and forbidden portraits</em></button>
+      <button class="menu-btn" data-action="open-controls"><span>How to Play</span><em>Controls, combat, and courtship</em></button>
+    </nav>
+    <div class="title-footer">
+      <div class="title-record" id="title-record"></div>
+      <div class="title-note">Headphones recommended · Progress saves automatically</div>
+    </div>
+  </div>
+  <div class="title-corner tl"></div><div class="title-corner tr"></div>
+  <div class="title-corner bl"></div><div class="title-corner br"></div>
+</section>
+
+<!-- ============ HUB UI ============ -->
+<section id="screen-hub" class="screen hub-screen">
+  <div class="hub-top">
+    <div class="hub-brand"><span>❖</span><b>THE GILDED WAKE</b><small>Sanctum of the Ember Oath</small></div>
+    <div class="hub-currency">
+      <div class="currency"><span class="coin cinder">❖</span><b id="hub-cinders">0</b><small>CINDERS</small></div>
+      <div class="currency"><span class="coin ember">✦</span><b id="hub-depth">0</b><small>BEST DEPTH</small></div>
+    </div>
+  </div>
+  <div class="hub-bonds" id="hub-bonds"></div>
+  <div class="hub-objective">
+    <span class="eyebrow">TONIGHT IN THE SANCTUM</span>
+    <p id="hub-objective-text">The three have gathered. Speak with them, spend your Cinders, then descend.</p>
+  </div>
+  <div class="hub-actions">
+    <button class="hub-btn" data-action="open-shop"><span>❖</span> Velvet Exchange</button>
+    <button class="hub-btn" data-action="open-gallery"><span>✧</span> Gallery</button>
+    <button class="hub-btn" data-action="open-controls"><span>?</span> Controls</button>
+    <button class="hub-btn ghost" data-action="to-title"><span>⌂</span> Title</button>
+  </div>
+  <div class="hub-hint">Walk with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · Interact with <kbd>E</kbd> · The abyss is beyond the great arch</div>
+</section>
+
+<!-- ============ DIALOGUE ============ -->
+<section id="screen-dialogue" class="screen dialogue-screen">
+  <div class="dialogue-backdrop"></div>
+  <div class="dialogue-stage">
+    <div class="portrait-stage" id="portrait-stage">
+      <div class="portrait-aura" id="portrait-aura"></div>
+      <img id="dialogue-portrait" class="dialogue-portrait" alt="">
+      <div class="portrait-nameplate">
+        <span class="eyebrow" id="dialogue-title">THE FALLEN SAINT</span>
+        <h2 id="dialogue-name">Seraphine Vale</h2>
+        <div class="bond-hearts" id="dialogue-bond"></div>
+      </div>
+    </div>
+    <div class="dialogue-panel">
+      <div class="dialogue-ornament">❦</div>
+      <div class="speaker" id="dialogue-speaker">SERAPHINE</div>
+      <p class="dialogue-text" id="dialogue-text"></p>
+      <div class="choices" id="dialogue-choices"></div>
+      <div class="dialogue-foot">
+        <span id="dialogue-affection-note"></span>
+        <button class="text-btn" id="dialogue-close">Leave <kbd>Esc</kbd></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GALLERY ============ -->
+<section id="screen-gallery" class="screen gallery-screen">
+  <div class="gallery-and-close"><button class="close-btn" data-action="close-gallery">✕</button></div>
+  <header class="gallery-head">
+    <span class="eyebrow">THE PRIVATE COLLECTION</span>
+    <h2>Illustrations of the <em>Unbound</em></h2>
+    <p>Reach Bond II with a woman to reveal her full-body illustration. Recovered memories appear at Bond IV.</p>
+  </header>
+  <div class="gallery-body">
+    <aside class="gallery-rail" id="gallery-rail"></aside>
+    <main class="gallery-stage">
+      <div class="art-frame" id="art-frame">
+        <div class="frame-corner tl"></div><div class="frame-corner tr"></div>
+        <div class="frame-corner bl"></div><div class="frame-corner br"></div>
+        <img id="gallery-art" alt="">
+        <div class="art-lock" id="art-lock">
+          <span class="lock-glyph">⚿</span>
+          <b>SEALED</b>
+          <p id="art-lock-text">Reach Bond II to reveal this illustration.</p>
+        </div>
+        <div class="art-caption" id="art-caption"></div>
+      </div>
+      <div class="art-notes">
+        <div class="art-title-row">
+          <div>
+            <span class="eyebrow" id="gallery-title">THE FALLEN SAINT</span>
+            <h3 id="gallery-name">Seraphine Vale</h3>
+          </div>
+          <button class="ghost-btn" id="gallery-expand">Expand ✧</button>
+        </div>
+        <p class="art-quote" id="gallery-quote"></p>
+        <p class="art-lore" id="gallery-lore"></p>
+        <div class="art-meta">
+          <span id="gallery-bond-label">BOND II REQUIRED</span>
+          <span id="gallery-status">SEALED</span>
+        </div>
+        <div class="memory-log" id="gallery-memory"></div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<div id="art-modal" class="art-modal">
+  <button class="close-btn" id="art-modal-close">✕</button>
+  <img id="art-modal-img" alt="">
+  <div class="art-modal-cap" id="art-modal-cap"></div>
+</div>
+
+<!-- ============ SHOP ============ -->
+<section id="screen-shop" class="screen shop-screen">
+  <div class="shop-shell">
+    <div class="shop-portrait-side">
+      <div class="shop-glow"></div>
+      <img id="shop-portrait" alt="">
+      <div class="shop-speech">
+        <span class="eyebrow">MIRELLE NOX</span>
+        <p id="shop-speech-text">“Everything has a price, darling. Even the things that feel free.”</p>
+      </div>
+    </div>
+    <div class="shop-main">
+      <header class="shop-head">
+        <div>
+          <span class="eyebrow" id="shop-eyebrow">THE VELVET EXCHANGE</span>
+          <h2 id="shop-title">Cinders for <em>Keepsakes</em></h2>
+        </div>
+        <div class="shop-currency"><span class="coin cinder">❖</span><b id="shop-currency">0</b><small id="shop-currency-label">CINDERS</small></div>
+        <button class="close-btn" data-action="close-shop">✕</button>
+      </header>
+      <p class="shop-sub" id="shop-sub">Permanent boons carved into your soul. They survive every death.</p>
+      <div class="shop-grid" id="shop-grid"></div>
+      <footer class="shop-foot">
+        <button class="ghost-btn" data-action="close-shop">Leave the counter</button>
+        <span id="shop-foot-note">“No refunds. I’m a demon, not a charity.”</span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOONS ============ -->
+<section id="screen-boons" class="screen boons-screen">
+  <div class="boons-inner">
+    <span class="eyebrow" id="boons-eyebrow">THE CHAMBER YIELDS</span>
+    <h2 id="boons-title">Claim a <em>Boon</em></h2>
+    <p class="boons-sub" id="boons-sub">One gift may follow you into the dark.</p>
+    <div class="boon-cards" id="boon-cards"></div>
+    <button class="ghost-btn skip-boons" id="skip-boons" data-action="skip-boons">Refuse the gift <small>+30 embers</small></button>
+  </div>
+</section>
+
+<!-- ============ CONTROLS ============ -->
+<section id="screen-controls" class="screen controls-screen">
+  <div class="controls-panel">
+    <button class="close-btn" data-action="close-controls">✕</button>
+    <span class="eyebrow">HOW TO SURVIVE</span>
+    <h2>Steel, Sorcery & <em>Seduction</em></h2>
+    <div class="controls-grid">
+      <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><p>Move through the sanctum and the deep.</p></div>
+      <div><span class="mouse-ico">◉</span><p>Move the mouse to aim your blade and bolts.</p></div>
+      <div><kbd>LMB</kbd><p>Melee combo. The third strike is heavier and wider.</p></div>
+      <div><kbd>RMB</kbd><p>Spend Ember to fire a soul bolt.</p></div>
+      <div><kbd>SPACE</kbd><p>Dash through danger. Brief invulnerability.</p></div>
+      <div><kbd>E</kbd><p>Speak, trade, and enter the gates of the deep.</p></div>
+      <div><kbd>ESC</kbd><p>Pause, view the gallery, or abandon the run.</p></div>
+      <div><span class="sigil">❖</span><p>Bonds unlock illustrations, oaths, and new dialogue.</p></div>
+    </div>
+    <p class="controls-note">Clear a chamber, choose one of three boons, then walk into a gate. Elite gates are dangerous. Shop gates spend Embers. Rest gates mend wounds. The Throne waits after four chambers.</p>
+    <button class="menu-btn primary" data-action="close-controls"><span>Return</span><em>The dark is patient</em></button>
+  </div>
+</section>
+
+<!-- ============ PAUSE ============ -->
+<section id="screen-pause" class="screen pause-screen">
+  <div class="pause-panel">
+    <span class="eyebrow">THE WORLD HOLDS ITS BREATH</span>
+    <h2>Paused</h2>
+    <div class="pause-stats" id="pause-stats"></div>
+    <div class="pause-menu">
+      <button class="menu-btn primary" data-action="resume"><span>Resume</span><em>Back into the dark</em></button>
+      <button class="menu-btn" data-action="open-gallery"><span>Gallery</span><em>Admire your bonds</em></button>
+      <button class="menu-btn" data-action="abandon-run"><span>Abandon Run</span><em>Keep your Cinders</em></button>
+      <button class="menu-btn ghost" data-action="to-title"><span>Return to Title</span><em>End the session</em></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GAME OVER ============ -->
+<section id="screen-result" class="screen result-screen">
+  <div class="result-panel">
+    <span class="eyebrow" id="result-eyebrow">THE DEEP CLAIMS ANOTHER</span>
+    <h2 id="result-title">Ashen <em>Silence</em></h2>
+    <p class="result-text" id="result-text"></p>
+    <div class="result-stats" id="result-stats"></div>
+    <div class="result-actions">
+      <button class="menu-btn primary" data-action="return-hub"><span>Return to the Sanctum</span><em>They will be waiting</em></button>
+      <button class="menu-btn ghost" data-action="retry-run"><span>Descend Again</span><em>Waste no time grieving</em></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TOASTS / TOUCH ============ -->
+<div id="toasts"></div>
+<div id="loading" class="loading"><div class="load-sigil">❖</div><span>Kindling the nave…</span></div>
+
+<div id="touch-ui" class="hidden">
+  <div id="joystick"><div class="stick"></div></div>
+  <div class="touch-actions">
+    <button data-touch="ranged">✦</button>
+    <button data-touch="dash">➤</button>
+    <button data-touch="melee">⚔</button>
+    <button data-touch="interact">E</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/addons/"
+  }
+}
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

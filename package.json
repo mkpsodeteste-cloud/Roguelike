@@ -1,0 +1,25 @@
+{
+  "name": "roguelike",
+  "version": "1.0.0",
+  "description": "<!-- omgithub:readme:start --> ## 🚀 Build, play, and remix with OMGithub",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkpsodeteste-cloud/Roguelike.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mkpsodeteste-cloud/Roguelike/issues"
+  },
+  "homepage": "https://github.com/mkpsodeteste-cloud/Roguelike#readme",
+  "dependencies": {
+    "sharp": "^0.35.5",
+    "three": "^0.180.0"
+  }
+}
